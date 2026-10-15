@@ -3,7 +3,9 @@
  *
  *   POST   /api/wishes      multipart upload -> Postgres -> broadcast `wish:new`
  *   GET    /api/wishes      newest-first list (bootstrap for a fresh client)
- *   DELETE /api/wishes/:id  takedown -> broadcast `wish:delete`
+ *   DELETE /api/wishes/:id  takedown (butuh token admin) -> broadcast `wish:delete`
+ *   POST   /api/admin/login password admin -> token
+ *   GET    /api/admin/session cek token admin
  *   GET    /uploads/<file>  stored images / videos
  *   GET    /health
  *
@@ -20,6 +22,7 @@ import { Server as SocketServer } from "socket.io";
 import { env } from "./config/env.js";
 import { sequelize } from "./db/index.js";
 import { Wish } from "./models/wish.js";
+import { createAdminRouter } from "./routes/admin.js";
 import { createWishesRouter } from "./routes/wishes.js";
 
 const BOOTSTRAP_LIMIT = 60;
@@ -44,6 +47,9 @@ const io = new SocketServer(server, {
   cors: { origin: env.corsOrigin, methods: ["GET", "POST", "DELETE"] },
 });
 
+// Di belakang Nginx: pakai IP klien asli (untuk pembatasan login admin).
+app.set("trust proxy", 1);
+
 app.use(cors({ origin: env.corsOrigin }));
 
 app.use(
@@ -51,6 +57,7 @@ app.use(
   express.static(env.uploadDir, { maxAge: "365d", immutable: true, index: false, dotfiles: "deny" }),
 );
 
+app.use("/api/admin", createAdminRouter());
 app.use("/api/wishes", createWishesRouter(io));
 
 app.get("/health", async (_req, res, next) => {

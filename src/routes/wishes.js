@@ -7,6 +7,7 @@ import formidable from "formidable";
 
 import { env } from "../config/env.js";
 import { Wish } from "../models/wish.js";
+import { requireAdmin } from "./admin.js";
 
 const MAX_FILE_BYTES = 15 * 1024 * 1024;
 const BOOTSTRAP_LIMIT = 60;
@@ -107,7 +108,7 @@ export function createWishesRouter(io) {
     }
   });
 
-  router.delete("/:id", async (req, res, next) => {
+  router.delete("/:id", requireAdmin, async (req, res, next) => {
     try {
       const { id } = req.params;
       const row = UUID_RE.test(id) ? await Wish.findByPk(id) : null;

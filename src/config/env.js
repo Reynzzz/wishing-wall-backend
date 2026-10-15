@@ -10,9 +10,25 @@ dotenv.config({ path: path.join(ROOT_DIR, ".env") });
 
 const port = Number(process.env.PORT ?? 4100);
 
+/**
+ * CORS_ORIGIN boleh "*", satu origin, atau beberapa dipisah koma. Garis miring di
+ * belakang dibuang: origin yang dikirim browser tidak pernah memakainya, jadi
+ * "https://situs.com/" tidak akan pernah cocok.
+ */
+function parseCorsOrigin(raw) {
+  const list = String(raw ?? "*")
+    .split(",")
+    .map((item) => item.trim().replace(/\/+$/, ""))
+    .filter(Boolean);
+  if (list.length === 0 || list.includes("*")) return "*";
+  return list.length === 1 ? list[0] : list;
+}
+
 export const env = {
   port,
-  corsOrigin: process.env.CORS_ORIGIN ?? "*",
+  corsOrigin: parseCorsOrigin(process.env.CORS_ORIGIN),
+  /** Password panel admin. Kosong = login admin dimatikan (takedown ditolak). */
+  adminPassword: process.env.ADMIN_PASSWORD ?? "",
   publicUrl: (process.env.PUBLIC_URL ?? `http://localhost:${port}`).replace(/\/+$/, ""),
   uploadDir: path.join(ROOT_DIR, "uploads"),
   db: {
